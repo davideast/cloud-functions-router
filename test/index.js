@@ -1,4 +1,4 @@
-import { debugServer } from 'api-af';
+import { debugServer } from '@davideast/firebase-functions-router';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
