@@ -7,8 +7,10 @@ async function getRoutes(): Promise<Map<string, Function>> {
       const handlerMap = new Map();
       let promises: any = [];
       for(let file of files) {
-        // TODO(davideast): Do a full replace for [], b/c we can support multiple
-        const path = file.replace('[', ':').replace(']', '').replace('.ts', '').replace('.js', '');
+        // Replace all []
+        const varPath = file.replace(/\[([^\]]+)\]/g, ':$1');
+        // Get rid of extensions
+        const path = varPath.replace('.ts', '').replace('.js', '');
         const module = await import(`${process.cwd()}/${file}`);
         promises = [...promises, { path: `/${path}`, module }];
       }
