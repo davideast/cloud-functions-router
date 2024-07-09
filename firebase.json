@@ -15,6 +15,7 @@
   },
   "functions": {
     "source": "dist",
-    "runtime": "nodejs14"
+    "runtime": "nodejs20",
+    "router": "./api"
   }
 }

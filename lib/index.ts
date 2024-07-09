@@ -1,21 +1,23 @@
 import recursive from 'recursive-readdir';
 import express from 'express';
 
-async function getRoutes(): Promise<Map<string, Function>> {
+async function getRoutes(routerPath: string): Promise<Map<string, Function>> {
   return new Promise((resolve, reject) => {
-    recursive('./api', async (error, files) => {
+    recursive(routerPath, async (error, files) => {
+      if (error) {
+        reject(error);
+        return;
+      }
       const handlerMap = new Map();
       let promises: any = [];
-      for(let file of files) {
+      for (let file of files) {
         // Replace all []
-        const varPath = file.replace(/\[([^\]]+)\]/g, ':$1');
-        // Get rid of extensions
-        const path = varPath.replace('.ts', '').replace('.js', '');
-        const module = await import(`${process.cwd()}/${file}`);
-        promises = [...promises, { path: `/${path}`, module }];
+        const path = file.replace(/\[([^\]]+)\]/g, ':$1').replace(/(\.ts|\.js)$/, '').replace(routerPath, '');
+        const module = await import(file);
+        promises = [...promises, { path, module }];
       }
       const routes: any[] = await Promise.all(promises);
-      for(let route of routes) {
+      for (let route of routes) {
         const handler = route.module.default;
         handlerMap.set(route.path, handler);
       }
@@ -24,21 +26,32 @@ async function getRoutes(): Promise<Map<string, Function>> {
   });
 }
 
-export async function createApiServer() {
-  const routes = await getRoutes();
-  const app = express();
-  for (let routePath of routes.keys()) {
-    console.log(routePath);
-    const handler = routes.get(routePath)!;
-    app.all(routePath, handler as any);
+export async function createApiServer(routerPath: string) {
+  try {
+    const server = express();
+    const routes = await getRoutes(routerPath);
+    for (let routePath of routes.keys()) {
+      const handler = routes.get(routePath)!;
+      server.all(routePath, handler as any);
+    }
+    return { server, routes };
+  } catch (error) {
+    throw error;
   }
-  return app;
 }
 
-export async function debugServer(port: number) {
-  const server = await createApiServer();
+export async function debugServer(port: number, routerPath: string) {
+  try {
+    const { server, routes } = await createApiServer(routerPath);
 
-  server.listen(port, () => {
-    console.log(`http://localhost:${port}/api`);
-  })
+    for (let routePath of routes.keys()) {
+      console.log(`http://localhost:${port}${routePath}`);
+    }
+
+    server.listen(port, () => {
+      console.log(`http://localhost:${port}/api`);
+    })
+  } catch (error) {
+    throw error;
+  }
 }
