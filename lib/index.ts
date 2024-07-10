@@ -1,30 +1,60 @@
-import recursive from 'recursive-readdir';
+import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
 import express from 'express';
 
-async function getRoutes(routerPath: string): Promise<Map<string, Function>> {
-  return new Promise((resolve, reject) => {
-    recursive(routerPath, async (error, files) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      const handlerMap = new Map();
-      let promises: any = [];
-      for (let file of files) {
-        // Replace all []
-        const path = file.replace(/\[([^\]]+)\]/g, ':$1').replace(/(\.ts|\.js)$/, '').replace(routerPath, '');
-        const module = await import(file);
-        promises = [...promises, { path, module }];
-      }
-      const routes: any[] = await Promise.all(promises);
-      for (let route of routes) {
-        const handler = route.module.default;
-        handlerMap.set(route.path, handler);
-      }
-      resolve(handlerMap);
-    });
-  });
+interface FileData {
+  path: string;
+  content: string;
 }
+
+async function readFilesRecursively(directoryPath: string): Promise<FileData[]> {
+  const entries = await fs.readdir(directoryPath, { withFileTypes: true });
+
+  const files: FileData[] = [];
+
+  for (const entry of entries) {
+    const fullPath = join(directoryPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await readFilesRecursively(fullPath)));
+    } else if (entry.isFile()) {
+      const content = await fs.readFile(fullPath, 'utf-8');
+      files.push({ path: fullPath, content });
+    }
+  }
+
+  return files;
+}
+
+async function getRoutes(routerPath: string): Promise<Map<string, Function>> {
+  try {
+    const files = await readFilesRecursively(routerPath); // Use the recursive file reader
+    const handlerMap = new Map<string, Function>();
+
+    await Promise.all(
+      files
+        .filter((file) => file.path.endsWith('.ts') || file.path.endsWith('.js')) // Filter only .ts or .js files
+        .map(async (file) => {
+          const path = file.path
+            .replace(/\[([^\]]+)\]/g, ':$1')
+            .replace(/(\.ts|\.js)$/, '')
+            .replace(routerPath, '');
+          const module = await import(file.path); // Import the module
+          const handler = module.default; // Get the default export
+          handlerMap.set(path, handler); // Add to the map
+        })
+    );
+
+    return handlerMap;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(`Error getting routes:`, error.message);
+    } else {
+      console.error(`Unknown error getting routes:`, error);
+    }
+    throw error; // Rethrow the error for higher-level handling
+  }
+}
+
 
 export async function createApiServer(routerPath: string) {
   try {
