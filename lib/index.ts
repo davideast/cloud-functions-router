@@ -29,7 +29,7 @@ async function getRoutes(routerPath: string): Promise<Map<string, Function>> {
   try {
     const files = await readFilesRecursively(routerPath); // Use the recursive file reader
     const handlerMap = new Map<string, Function>();
-
+    
     await Promise.all(
       files
         .filter((file) => file.path.endsWith('.ts') || file.path.endsWith('.js')) // Filter only .ts or .js files
