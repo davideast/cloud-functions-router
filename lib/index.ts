@@ -55,7 +55,6 @@ async function getRoutes(routerPath: string): Promise<Map<string, Function>> {
   }
 }
 
-
 export async function createApiServer(routerPath: string) {
   try {
     const server = express();
