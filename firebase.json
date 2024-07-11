@@ -7,15 +7,24 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      { 
-        "source": "**", 
-        "function": "apiServer" 
+      {
+        "source": "**",
+        "function": "apiServer"
       }
     ]
   },
-  "functions": {
-    "source": "dist",
-    "runtime": "nodejs20",
-    "router": "./api"
-  }
+  "functions": [
+    {
+      "source": "functions",
+      "runtime": "nodejs20",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
 }
