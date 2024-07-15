@@ -2,7 +2,7 @@
   "name": "@davideast/firebase-functions-router",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "functions/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "ts-node index.ts"
@@ -21,6 +21,7 @@
   },
   "description": "",
   "devDependencies": {
-    "@types/express": "^4.17.21"
+    "@types/express": "^4.17.21",
+    "firebase-tools": "^13.13.1"
   }
 }
