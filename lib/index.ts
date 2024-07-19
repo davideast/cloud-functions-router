@@ -1,6 +1,8 @@
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
+import { initializeServerApp, FirebaseOptions, FirebaseServerAppSettings } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 
 interface FileData {
   path: string;
@@ -69,6 +71,27 @@ export async function createApiServer(routerPath: string) {
   }
 }
 
+async function authMiddleware(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const authIdToken = authHeader.split(' ')[1];
+  const configOptions = await readFirebaseOptions();
+  const serverSettings: FirebaseServerAppSettings = { 
+    authIdToken,
+  };
+  const serverApp = initializeServerApp(configOptions, serverSettings);
+  const serverAuth = getAuth(serverApp);
+  await serverAuth.authStateReady();
+  if (serverAuth.currentUser !== null) {
+    req.locals.user = serverAuth.currentUser;
+    next()
+  } else {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+}
+
 export async function debugServer(port: number, routerPath: string) {
   try {
     const { server, routes } = await createApiServer(routerPath);
@@ -81,6 +104,16 @@ export async function debugServer(port: number, routerPath: string) {
       console.log(`http://localhost:${port}/api`);
     })
   } catch (error) {
+    throw error;
+  }
+}
+
+async function readFirebaseOptions() {
+  try {
+    const settings = await fs.readFile('./firebase-config.json', 'utf-8');
+    return JSON.parse(settings) as FirebaseOptions;
+  } catch (error) {
+    console.error('Error reading firebase-config.json:', error);
     throw error;
   }
 }

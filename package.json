@@ -1,6 +1,6 @@
 {
-  "name": "@davideast/firebase-functions-router",
-  "version": "1.0.0",
+  "name": "ff-serve",
+  "version": "0.0.1",
   "type": "module",
   "main": "functions/index.js",
   "scripts": {
@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.19.2",
+    "firebase": "^10.12.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.3"
   },
@@ -21,7 +22,9 @@
   },
   "description": "",
   "devDependencies": {
+    "@clack/prompts": "^0.7.0",
     "@types/express": "^4.17.21",
-    "firebase-tools": "^13.13.1"
+    "firebase-tools": "^13.13.1",
+    "picocolors": "^1.0.1"
   }
 }

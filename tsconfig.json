@@ -2,14 +2,19 @@
   "compilerOptions": {
     "outDir": "dist",
     "target": "ES2021",
-    "module": "ES2020",
+    "module": "esnext",
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "Node",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true, 
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
+  "include": [
+    "**/*.ts",
+    "**/*.d.ts"
+  ],
   "files": [
     "index.ts"
   ]
