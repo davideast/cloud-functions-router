@@ -17,20 +17,19 @@
       appId: "1:752586403070:web:ddc29d4924cade9230c9af"
     })
     const auth = getAuth()
-    console.log(auth)
     const btnSignIn = document.querySelector('button.signin')
+    const btnSignOut = document.querySelector('button.signout')
     const btnFetch = document.querySelector('button.fetch')
     auth.onAuthStateChanged(async (user) => {
+      console.log({ user })
       if (user) {
-        const idToken = await auth.currentUser.getIdToken();
+        const idToken = await user.getIdToken();
         const cookieOptions = {
           secure: true,           // Send cookie only over HTTPS (critical for security)
-          httpOnly: true,        // Prevent client-side JavaScript from accessing the cookie
           sameSite: 'strict',    // Restrict cookie to same-site requests
           maxAge: 3600,          // Cookie expires in 1 hour (adjust as needed)
           path: '/',             // Cookie applies to the entire domain
         };
-        console.log({ idToken })
         document.cookie = `__session=${idToken}; ${Object.entries(cookieOptions).map(([key, value]) => `${key}=${value}`).join('; ')}`;
       } else {
         document.cookie = "__session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -39,22 +38,32 @@
     btnSignIn.addEventListener('click', clickEvent => {
       signInAnonymously(auth).then(console.log)
     })
+    btnSignOut.addEventListener('click', clickEvent => {
+      auth.signOut()
+    })
     btnFetch.addEventListener('click', async clickEvent => {
-      const idToken = await auth.currentUser.getIdToken();
-      const response = await fetch('/api/hello', {
-        headers: {
-          // Include idToken in Bearer format
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
-      const data = await response.json()
-      console.log(data)
+      if (auth.currentUser) {
+        const idToken = await auth.currentUser.getIdToken();
+        const response = await fetch('/api/hello', {
+          headers: {
+            // Include idToken in Bearer format
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+        const data = await response.json()
+        console.log(data)
+      } else {
+        const response = await fetch('/api/hello')
+        const data = await response.json()
+        console.log(data)
+      }
     })
   </script>
 </head>
 <body>
   <h1>Testing</h1>
   <button class="signin">Sign In</button>
+  <button class="signout">Sign Out</button>
   <button class="fetch">Fetch</button>
 </body>
 </html>

@@ -1,17 +1,12 @@
 
-import path from 'path'; // Import the path module
-import { fileURLToPath } from 'url'; // Import for resolving module URLs
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename); 
+const filePath = join(__dirname, './index.html');
 
 export default function handler(req, res) {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename); 
-  const filePath = path.join(__dirname, './index.html'); // Absolute path
   console.log({ locals: req.locals });
-  
-  res.sendFile(filePath, (error) => {
-    if (error) {
-      console.error('Error sending file:', error);
-      res.status(error.status || 500).send('Internal Server Error');
-    }
-  });
+  console.log({ cookies: req.cookies.__session });
+  res.sendFile(filePath);
 }

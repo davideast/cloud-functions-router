@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import express, { Request, Response, NextFunction } from 'express';
+import cookieParser from 'cookie-parser';
 import { initializeServerApp, FirebaseOptions, FirebaseServerAppSettings } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
@@ -57,14 +58,15 @@ async function getRoutes(routerPath: string): Promise<Map<string, Function>> {
   }
 }
 
-export async function createApiServer(routerPath: string, options?: FirebaseOptions) {
+export async function createApiServer(routerPath: string, options?: FirebaseOptions, cookieName: string = '__session') {
   try {
     const server = express();
     const routes = await getRoutes(routerPath);
     if (!options) {
       options = await readFirebaseOptions();
     }
-    const authMiddleware = createAuthMiddleware(options);
+    const authMiddleware = createAuthMiddleware(options, cookieName);
+    server.use(cookieParser())
     server.use('**', authMiddleware as any);
     for (let routePath of routes.keys()) {
       const handler = routes.get(routePath)!;
@@ -76,30 +78,45 @@ export async function createApiServer(routerPath: string, options?: FirebaseOpti
   }
 }
 
-function createAuthMiddleware(options: FirebaseOptions) {
+function createAuthMiddleware(options: FirebaseOptions, cookieName: string = '__session') {
   return async function (req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers.authorization;
+    let authIdToken = null;
     req.locals = {};
-    if (!authHeader) {
+
+    if (authHeader) {
+      authIdToken = authHeader.split(' ')[1]; // Extract token from Bearer format
+    }
+
+    if (!authIdToken) {
+      // Ensure cookieParser middleware is used BEFORE this middleware
+      authIdToken = req.cookies?.[cookieName]; 
+    }
+    
+    // Exit because there's no bearer token or __session cookie
+    if (!authHeader && !authIdToken) {
       next();
       return;
     }
-    const authIdToken = authHeader.split(' ')[1];
-    const serverSettings: FirebaseServerAppSettings = { 
-      authIdToken,
-    };
-    const serverApp = initializeServerApp(options, serverSettings);
-    const serverAuth = getAuth(serverApp);
-    await serverAuth.authStateReady();
-    if (serverAuth.currentUser !== null) {
-      req.locals.user = serverAuth.currentUser;
+
+    try {
+      const serverSettings: FirebaseServerAppSettings = { authIdToken };
+      const serverApp = initializeServerApp(options, serverSettings);
+      const serverAuth = getAuth(serverApp);
+
+      await serverAuth.authStateReady();
+
+      if (serverAuth.currentUser !== null) {
+        req.locals.user = serverAuth.currentUser;
+      } 
+    } catch (error) {
+      console.error("Error verifying token:", error);
     }
-    next()
-    return
+    next();
   }
 }
 
-export async function debugServer({ port, path, firebaseConfig }: { port: number; path: string; firebaseConfig?: FirebaseOptions }) {
+export async function debugServer({ port, path, firebaseConfig, cookieName = '__session' }: { port: number; path: string; firebaseConfig?: FirebaseOptions; cookieName?: string }) {
   try {
     const { server, routes } = await createApiServer(path, firebaseConfig);
 
