@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@davideast/firebase-functions-router": "file:../davideast-firebase-functions-router-1.0.0.tgz"
+    "@davideast/firebase-functions-router": "file:../davideast-firebase-functions-router-1.0.0.tgz",
+    "ff-serve": "file:../ff-serve-0.0.1.tgz"
   }
 }
