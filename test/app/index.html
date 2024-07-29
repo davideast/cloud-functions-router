@@ -4,8 +4,57 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ffserve</title>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js'
+    import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js'
+    
+    const app = initializeApp({
+      apiKey: "AIzaSyAeRU6P9knxpKqa1LbTrfEG3UOFiOxZNUs",
+      authDomain: "genkit-idx.firebaseapp.com",
+      projectId: "genkit-idx",
+      storageBucket: "genkit-idx.appspot.com",
+      messagingSenderId: "752586403070",
+      appId: "1:752586403070:web:ddc29d4924cade9230c9af"
+    })
+    const auth = getAuth()
+    console.log(auth)
+    const btnSignIn = document.querySelector('button.signin')
+    const btnFetch = document.querySelector('button.fetch')
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const idToken = await auth.currentUser.getIdToken();
+        const cookieOptions = {
+          secure: true,           // Send cookie only over HTTPS (critical for security)
+          httpOnly: true,        // Prevent client-side JavaScript from accessing the cookie
+          sameSite: 'strict',    // Restrict cookie to same-site requests
+          maxAge: 3600,          // Cookie expires in 1 hour (adjust as needed)
+          path: '/',             // Cookie applies to the entire domain
+        };
+        console.log({ idToken })
+        document.cookie = `__session=${idToken}; ${Object.entries(cookieOptions).map(([key, value]) => `${key}=${value}`).join('; ')}`;
+      } else {
+        document.cookie = "__session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      }
+    });
+    btnSignIn.addEventListener('click', clickEvent => {
+      signInAnonymously(auth).then(console.log)
+    })
+    btnFetch.addEventListener('click', async clickEvent => {
+      const idToken = await auth.currentUser.getIdToken();
+      const response = await fetch('/api/hello', {
+        headers: {
+          // Include idToken in Bearer format
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      const data = await response.json()
+      console.log(data)
+    })
+  </script>
 </head>
 <body>
   <h1>Testing</h1>
+  <button class="signin">Sign In</button>
+  <button class="fetch">Fetch</button>
 </body>
 </html>

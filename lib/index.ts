@@ -57,10 +57,15 @@ async function getRoutes(routerPath: string): Promise<Map<string, Function>> {
   }
 }
 
-export async function createApiServer(routerPath: string) {
+export async function createApiServer(routerPath: string, options?: FirebaseOptions) {
   try {
     const server = express();
     const routes = await getRoutes(routerPath);
+    if (!options) {
+      options = await readFirebaseOptions();
+    }
+    const authMiddleware = createAuthMiddleware(options);
+    server.use('**', authMiddleware as any);
     for (let routePath of routes.keys()) {
       const handler = routes.get(routePath)!;
       server.all(routePath, handler as any);
@@ -71,30 +76,32 @@ export async function createApiServer(routerPath: string) {
   }
 }
 
-async function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  const authIdToken = authHeader.split(' ')[1];
-  const configOptions = await readFirebaseOptions();
-  const serverSettings: FirebaseServerAppSettings = { 
-    authIdToken,
-  };
-  const serverApp = initializeServerApp(configOptions, serverSettings);
-  const serverAuth = getAuth(serverApp);
-  await serverAuth.authStateReady();
-  if (serverAuth.currentUser !== null) {
-    req.locals.user = serverAuth.currentUser;
+function createAuthMiddleware(options: FirebaseOptions) {
+  return async function (req: Request, res: Response, next: NextFunction) {
+    const authHeader = req.headers.authorization;
+    req.locals = {};
+    if (!authHeader) {
+      next();
+      return;
+    }
+    const authIdToken = authHeader.split(' ')[1];
+    const serverSettings: FirebaseServerAppSettings = { 
+      authIdToken,
+    };
+    const serverApp = initializeServerApp(options, serverSettings);
+    const serverAuth = getAuth(serverApp);
+    await serverAuth.authStateReady();
+    if (serverAuth.currentUser !== null) {
+      req.locals.user = serverAuth.currentUser;
+    }
     next()
-  } else {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return
   }
 }
 
-export async function debugServer(port: number, routerPath: string) {
+export async function debugServer({ port, path, firebaseConfig }: { port: number; path: string; firebaseConfig?: FirebaseOptions }) {
   try {
-    const { server, routes } = await createApiServer(routerPath);
+    const { server, routes } = await createApiServer(path, firebaseConfig);
 
     for (let routePath of routes.keys()) {
       console.log(`http://localhost:${port}${routePath}`);

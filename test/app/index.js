@@ -6,7 +6,8 @@ export default function handler(req, res) {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename); 
   const filePath = path.join(__dirname, './index.html'); // Absolute path
-
+  console.log({ locals: req.locals });
+  
   res.sendFile(filePath, (error) => {
     if (error) {
       console.error('Error sending file:', error);
