@@ -14,7 +14,8 @@
     "@types/cookie-parser": "^1.4.7",
     "cookie-parser": "^1.4.6",
     "express": "^4.19.2",
-    "firebase": "^10.12.4"
+    "firebase": "^10.12.4",
+    "vite": "^5.3.5"
   },
   "directories": {
     "lib": "lib"
