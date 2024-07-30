@@ -31,20 +31,20 @@ async function readFilesRecursively(directoryPath: string): Promise<FileData[]> 
 
 async function getRoutes(routerPath: string): Promise<Map<string, Function>> {
   try {
-    const files = await readFilesRecursively(routerPath); // Use the recursive file reader
+    const files = await readFilesRecursively(routerPath);
     const handlerMap = new Map<string, Function>();
     
     await Promise.all(
       files
-        .filter((file) => file.path.endsWith('.ts') || file.path.endsWith('.js')) // Filter only .ts or .js files
+        .filter((file) => file.path.endsWith('.ts') || file.path.endsWith('.js'))
         .map(async (file) => {
           const path = file.path
             .replace(/\[([^\]]+)\]/g, ':$1')
             .replace(/(\.ts|\.js)$/, '')
             .replace(routerPath, '');
-          const module = await import(file.path); // Import the module
-          const handler = module.default; // Get the default export
-          handlerMap.set(path, handler); // Add to the map
+          const module = await import(file.path); 
+          const handler = module.default;
+          handlerMap.set(path, handler);
         })
     );
 
@@ -55,7 +55,7 @@ async function getRoutes(routerPath: string): Promise<Map<string, Function>> {
     } else {
       console.error(`Unknown error getting routes:`, error);
     }
-    throw error; // Rethrow the error for higher-level handling
+    throw error;
   }
 }
 
@@ -131,7 +131,6 @@ function createAuthMiddleware(options: FirebaseOptions, cookieName: string = '__
     }
 
     if (!authIdToken) {
-      // Ensure cookieParser middleware is used BEFORE this middleware
       authIdToken = req.cookies?.[cookieName]; 
     }
     
@@ -145,9 +144,7 @@ function createAuthMiddleware(options: FirebaseOptions, cookieName: string = '__
       const serverSettings: FirebaseServerAppSettings = { authIdToken };
       const serverApp = initializeServerApp(options, serverSettings);
       const serverAuth = getAuth(serverApp);
-
       await serverAuth.authStateReady();
-
       if (serverAuth.currentUser !== null) {
         req.locals.user = serverAuth.currentUser;
       } 
@@ -160,26 +157,26 @@ function createAuthMiddleware(options: FirebaseOptions, cookieName: string = '__
 
 export async function debugServer({ port, path, firebaseConfig, cookieName = '__session' }: { port: number; path: string; firebaseConfig?: FirebaseOptions; cookieName?: string }) {
   try {
-    const { server, routes } = await createApiServer(path, firebaseConfig);
+    const { server, routes } = await createApiServer(path, firebaseConfig, cookieName);
 
     for (let routePath of routes.keys()) {
       console.log(`http://localhost:${port}${routePath}`);
     }
 
     server.listen(port, () => {
-      console.log(`http://localhost:${port}/api`);
+      console.log(`http://localhost:${port}/`);
     })
   } catch (error) {
     throw error;
   }
 }
 
-async function readFirebaseOptions() {
+async function readFirebaseOptions(configFilePath = './firebase-config.json') {
   try {
-    const settings = await fs.readFile('./firebase-config.json', 'utf-8');
+    const settings = await fs.readFile(configFilePath, 'utf-8');
     return JSON.parse(settings) as FirebaseOptions;
   } catch (error) {
-    console.error('Error reading firebase-config.json:', error);
+    console.error(`Error reading ${configFilePath}:`, error);
     throw error;
   }
 }
