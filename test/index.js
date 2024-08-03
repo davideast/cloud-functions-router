@@ -14,6 +14,8 @@ const firebaseConfig = {
   appId: "1:752586403070:web:ddc29d4924cade9230c9af"
 };
 
-debugServer({ port, path, firebaseConfig }).then(server => {
-  console.log(server);
-})
+debugServer({ 
+  port, 
+  path, 
+  firebaseConfig,
+}).catch(console.error)
