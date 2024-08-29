@@ -74,6 +74,10 @@ export async function createApiServer(routerPath: string, options?: FirebaseOpti
     const authMiddleware = createAuthMiddleware(options, cookieName);
     server.use(cookieParser())
     server.use('**', authMiddleware as any);
+    for (let routePath of routes.keys()) {
+      const handler = routes.get(routePath)!;
+      server.all(routePath, handler as any);
+    }
     server.use('/', async (req, res, next) => {
       const url = req.originalUrl
       try {
@@ -91,7 +95,7 @@ export async function createApiServer(routerPath: string, options?: FirebaseOpti
         // 3. Load the server entry. ssrLoadModule automatically transforms
         //    ESM source code to be usable in Node.js! There is no bundling
         //    required, and provides efficient invalidation similar to HMR.
-        // const { render } = await vite.ssrLoadModule('/src/entry-server.js')
+        const { render } = await vite.ssrLoadModule('./lib/entry-server.js');
     
         // 4. render the app HTML. This assumes entry-server.js's exported
         //     `render` function calls appropriate framework SSR APIs,
@@ -110,10 +114,6 @@ export async function createApiServer(routerPath: string, options?: FirebaseOpti
         next(e)
       }
     })
-    for (let routePath of routes.keys()) {
-      const handler = routes.get(routePath)!;
-      server.all(routePath, handler as any);
-    }
     return { server, routes };
   } catch (error) {
     throw error;
