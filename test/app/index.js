@@ -7,6 +7,5 @@ const filePath = join(__dirname, './index.html');
 
 export default function handler(req, res) {
   console.log({ locals: req.locals });
-  console.log({ cookies: req.cookies.__session });
   res.sendFile(filePath);
 }

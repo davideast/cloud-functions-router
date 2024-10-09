@@ -21,7 +21,7 @@
     const btnSignOut = document.querySelector('button.signout')
     const btnFetch = document.querySelector('button.fetch')
     auth.onAuthStateChanged(async (user) => {
-      console.log({ user })
+      // console.log({ user })
       if (user) {
         const idToken = await user.getIdToken();
         const cookieOptions = {
